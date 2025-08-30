@@ -1,15 +1,94 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
+interface CompanyDetails {
+  description?: string;
+  CEO?: string;
+  SNI?: string;
+}
+
 export interface Company {
   name: string;
   location: string;
   foundedDate: string;
   organisationNumber: string;
+  detailUrl?: string;
+  description?: string;
+  CEO?: string;
+  SNI?: string;
 }
 
-async function scrapeCompanies(page: number = 1): Promise<Company[]> {
-  const url = `https://www.allabolag.se/nystartade?location=Skåne&proffIndustryCode=10241621&page=${page}`;
+async function fetchCompanyDetails(detailUrl: string): Promise<CompanyDetails> {
+  try {
+    console.log(`🔍 Fetching company details from: ${detailUrl}`);
+    
+    const response = await axios.get(detailUrl, {
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+
+    if (response.status !== 200) {
+      console.log(`❌ Failed to fetch ${detailUrl} - Status: ${response.status}`);
+      return {};
+    }
+
+    const html = response.data;
+    const details: CompanyDetails = {};
+
+    // Extract description from "Verksamhet & ändamål" section
+    const descriptionMatch = html.match(/Verksamhet\s*&\s*ändamål[^>]*>[\s\S]*?<div[^>]*>([\s\S]*?)<\/div>/i);
+    if (descriptionMatch) {
+      // Clean up HTML tags and whitespace
+      let description = descriptionMatch[1]
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/\s+/g, ' ') // Replace multiple whitespace with single space
+        .trim();
+      
+      if (description && description.length > 10) {
+        details.description = description;
+        console.log(`📝 Found description: ${description.substring(0, 100)}...`);
+      }
+    }
+
+    // Extract CEO from "Verkställande Direktör" section
+    const ceoMatch = html.match(/Verkställande\s*Direktör[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/i);
+    if (ceoMatch) {
+      const ceo = ceoMatch[1].trim();
+      if (ceo && ceo.length > 2) {
+        details.CEO = ceo;
+        console.log(`👨‍💼 Found CEO: ${ceo}`);
+      }
+    }
+
+    // Extract SNI branches - look for multiple "SNI-bransch" entries
+    const sniMatches = html.matchAll(/SNI-bransch[^>]*>[\s\S]*?<span[^>]*>([^<]+)<\/span>/gi);
+    const sniBranches: string[] = [];
+    
+    for (const match of sniMatches) {
+      const sniBranch = match[1].trim();
+      if (sniBranch && sniBranch.length > 2) {
+        sniBranches.push(sniBranch);
+      }
+    }
+    
+    if (sniBranches.length > 0) {
+      details.SNI = sniBranches.join(', ');
+      console.log(`🏢 Found SNI branches: ${details.SNI}`);
+    }
+
+    console.log(`✅ Successfully extracted details for ${detailUrl}`);
+    return details;
+
+  } catch (error) {
+    console.log(`❌ Error fetching company details from ${detailUrl}:`, error instanceof Error ? error.message : 'Unknown error');
+    return {};
+  }
+}
+
+async function scrapeCompanies(page: number = 1, proffIndustryCode: string = '10241621'): Promise<Company[]> {
+  const url = `https://www.allabolag.se/nystartade?location=Skåne&proffIndustryCode=${proffIndustryCode}&page=${page}`;
   
   try {
     console.log(`Fetching page ${page} from: ${url}`);
@@ -50,12 +129,16 @@ async function scrapeCompanies(page: number = 1): Promise<Company[]> {
       while ((match = listItemRegex.exec(html)) !== null) {
         const listItemContent = match[1];
         
-        // Extract company name from the link
-        const nameMatch = listItemContent.match(/href="\/foretag\/[^"]*">([^<]+)<\/a>/);
-        if (!nameMatch) continue;
+        // Extract company name and detail URL from the link
+        const nameAndUrlMatch = listItemContent.match(/href="(\/foretag\/[^"]*)">([^<]+)<\/a>/);
+        if (!nameAndUrlMatch) continue;
         
-        const companyName = nameMatch[1];
+        const detailPath = nameAndUrlMatch[1];
+        const companyName = nameAndUrlMatch[2];
+        const fullDetailUrl = `https://www.allabolag.se${detailPath}`;
+        
         console.log(`Found company: ${companyName}`);
+        console.log(`🔗 Company detail link: ${fullDetailUrl}`);
         
         // Only include companies with "AB" or "Aktiebolag" in the name
         if (!companyName.includes('AB') && !companyName.includes('Aktiebolag')) {
@@ -95,15 +178,23 @@ async function scrapeCompanies(page: number = 1): Promise<Company[]> {
         const foundedDate = dateMatch[1];
         console.log(`Date: ${foundedDate}`);
         
-        // Add the complete company
+        // Fetch additional details from company detail page
+        console.log(`🔍 Fetching additional details for ${companyName}...`);
+        const additionalDetails = await fetchCompanyDetails(fullDetailUrl);
+        
+        // Add the complete company with all details
         companies.push({
           name: companyName,
           location: location,
           foundedDate: foundedDate,
-          organisationNumber: orgNumber
+          organisationNumber: orgNumber,
+          detailUrl: fullDetailUrl,
+          description: additionalDetails.description,
+          CEO: additionalDetails.CEO,
+          SNI: additionalDetails.SNI
         });
         
-        console.log(`✓ Added complete company: ${companyName}`);
+        console.log(`✅ Added complete company with details: ${companyName}`);
       }
       
       console.log(`Parsed ${companies.length} companies from Material-UI HTML for page ${page}`);
@@ -155,9 +246,10 @@ function getMockCompanies(page: number): Company[] {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
+  const code = searchParams.get('code') || '10241621';
   
   try {
-    const companies = await scrapeCompanies(page);
+    const companies = await scrapeCompanies(page, code);
     return NextResponse.json(companies);
   } catch (error) {
     console.error('API error:', error);

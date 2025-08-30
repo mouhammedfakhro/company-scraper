@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/company-digest",
+      "schedule": "* * * * *"
+    }
+  ]
+}

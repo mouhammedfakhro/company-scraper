@@ -3,6 +3,10 @@ export interface Company {
   location: string;
   foundedDate: string;
   organisationNumber: string;
+  detailUrl?: string;
+  description?: string;
+  CEO?: string;
+  SNI?: string;
 }
 
 export async function scrapeCompanies(page: number = 1): Promise<Company[]> {

@@ -1,43 +1,68 @@
-// This is a sample model to get you started.
-
-/// A sample data source using local sqlite db.
-datasource db {
-    provider = 'sqlite'
-    url = 'file:./dev.db'
-}
-
 generator client {
     provider = "prisma-client-js"
 }
 
-/// User model
-model User {
-    id       String @id @default(cuid())
-    email    String @unique @email @length(6, 32)
-    password String @password @omit
-    posts    Post[]
-
-    // everybody can signup
-    @@allow('create', true)
-
-    // full access by self
-    @@allow('all', auth() == this)
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
-/// Post model
-model Post {
+plugin hooks {
+    provider = '@zenstackhq/tanstack-query'
+    target = 'react'
+    version = 'v5'
+    output = "./src/lib/hooks"
+}
+
+abstract model Base {
     id        String   @id @default(cuid())
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-    title     String   @length(1, 256)
-    content   String
-    published Boolean  @default(false)
-    author    User     @relation(fields: [authorId], references: [id])
-    authorId  String
+}
 
-    // allow read for all signin users
-    @@allow('read', auth() != null && published)
+model EmailHandler extends Base {
+    emails String[]
 
-    // full access by author
-    @@allow('all', author == auth())
+    @@allow('all', true)
+}
+
+model ScraperHandler extends Base {
+    proffIndustryCodes ProffIndustryCode[]
+    @@allow('all', true)
+}
+
+model ProffIndustryCode extends Base {
+    code String @unique
+    name String
+
+    proffIndustryCode            ScraperHandler? @relation(fields: [proffIndustryCodeId], references: [id])
+    proffIndustryCodeId          String?
+        @@allow('all', true)
+
+}
+
+model ScrapedCompanies extends Base {
+    companies Company[]
+        @@allow('all', true)
+
+}
+
+model Company extends Base {
+    organizationNumber String            @unique
+    name               String
+    State              String?
+    address            String?
+    postalCode         String?
+    city               String?
+    registeredDate     String?
+    description        String?
+    url                String?
+    CEO                String?
+    SNI                String?
+    isFavorite         Boolean           @default(false)
+
+    scraper            ScrapedCompanies? @relation(fields: [scraperId], references: [id])
+    scraperId          String?
+
+    @@allow('all', true)
 }

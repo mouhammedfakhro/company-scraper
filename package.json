@@ -10,8 +10,12 @@
   },
   "dependencies": {
     "@prisma/client": "6.14.x",
+    "@tanstack/react-query": "^5.85.5",
     "@zenstackhq/runtime": "2.18.1",
+    "@zenstackhq/server": "^2.18.1",
+    "@zenstackhq/tanstack-query": "^2.18.1",
     "axios": "^1.11.0",
+    "mailersend": "^2.6.0",
     "next": "15.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0"
