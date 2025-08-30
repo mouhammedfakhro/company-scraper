@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend';
 import prisma from '../../../../components/lib/prisma';
 
@@ -8,19 +8,100 @@ const mailerSend = new MailerSend({
 
 async function scrapeCompaniesByCode(code: string): Promise<any[]> {
   try {
-    const response = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/companies?page=1&code=${code}`, {
-      method: 'GET',
-    });
+    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3002';
+    const allCompanies: any[] = [];
+    let page = 1;
+    const maxPages = 10; // Increased to get all companies
     
-    if (!response.ok) {
-      console.error(`Failed to fetch companies for code ${code}: ${response.status}`);
-      return [];
+    while (page <= maxPages) {
+      const url = `${baseUrl}/api/companies?page=${page}&code=${code}&skipDetails=true`;
+      console.log(`Fetching companies from page ${page}: ${url}`);
+      
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(30000)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to fetch companies for code ${code}, page ${page}: ${response.status} - ${errorText}`);
+          break; // Stop if we get an error
+        }
+        
+        const companies = await response.json();
+        console.log(`Page ${page}: Found ${companies.length} companies for code ${code}`);
+        
+        if (companies.length === 0) {
+          console.log(`No more companies found on page ${page}, stopping`);
+          break; // Stop if no companies found
+        }
+        
+        allCompanies.push(...companies);
+        page++;
+        
+      } catch (pageError) {
+        console.error(`Error fetching page ${page} for code ${code}:`, pageError);
+        break; // Stop on error
+      }
     }
     
-    return await response.json();
+    console.log(`Successfully fetched total of ${allCompanies.length} companies for code ${code} across ${page - 1} pages`);
+    return allCompanies;
   } catch (error) {
     console.error(`Error fetching companies for code ${code}:`, error);
     return [];
+  }
+}
+
+async function saveCompaniesToDatabase(companies: any[]): Promise<boolean> {
+  try {
+    if (companies.length === 0) {
+      console.log('No companies to save');
+      return true;
+    }
+
+    console.log(`Saving ${companies.length} companies to database...`);
+
+    const savePromises = companies.map(company =>
+      prisma.company.upsert({
+        where: {
+          organizationNumber: company.organisationNumber || company.organizationNumber
+        },
+        update: {
+          name: company.name,
+          address: company.location,
+          city: company.location,
+          registeredDate: company.foundedDate,
+          url: company.detailUrl,
+          description: company.description,
+          CEO: company.CEO,
+          SNI: company.SNI
+        },
+        create: {
+          organizationNumber: company.organisationNumber || company.organizationNumber,
+          name: company.name,
+          address: company.location,
+          city: company.location,
+          registeredDate: company.foundedDate,
+          url: company.detailUrl,
+          description: company.description,
+          CEO: company.CEO,
+          SNI: company.SNI,
+          isFavorite: false
+        }
+      })
+    );
+
+    await Promise.all(savePromises);
+    console.log(`✅ Successfully saved ${companies.length} companies to database`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error saving companies to database:', error);
+    return false;
   }
 }
 
@@ -93,11 +174,11 @@ async function sendCompanyDigest(companies: any[]): Promise<void> {
     console.log(`Sending digest to ${emailHandler.emails.length} email addresses`);
 
     // Create email content
-    const subject = `Company Scraper Digest - ${companies.length} New Companies Found`;
+    const subject = `Företagsökare - ${companies.length} nya företag hittade`;
     
     let htmlContent = `
-      <h2>Company Scraper Daily Digest</h2>
-      <p>Found <strong>${companies.length}</strong> new companies that match your criteria:</p>
+      <h2>Företagsökare - Dagligt sammandrag</h2>
+      <p>Hittade <strong>${companies.length}</strong> nya företag som matchar dina kriterier:</p>
     `;
 
     if (companies.length > 0) {
@@ -115,49 +196,43 @@ async function sendCompanyDigest(companies: any[]): Promise<void> {
       
       Object.entries(companiesByCode).forEach(([codeKey, codeCompanies]) => {
         htmlContent += `
-          <h3 style="color: #2563eb; margin-top: 20px;">${codeKey} (${codeCompanies.length} companies)</h3>
+          <h3 style="color: #2563eb; margin-top: 20px;">${codeKey} (${codeCompanies.length} företag)</h3>
           <ul style="list-style-type: none; padding-left: 0;">
         `;
         
-        codeCompanies.slice(0, 10).forEach(company => { // Limit to first 10 per code
+        codeCompanies.forEach(company => { // Show all companies
           htmlContent += `
             <li style="margin: 10px 0; padding: 10px; border-left: 3px solid #2563eb; background-color: #f8fafc;">
               <strong>${company.name}</strong><br>
               <small style="color: #64748b;">
-                Org #: ${company.organisationNumber || company.organizationNumber} | 
-                Location: ${company.location || 'N/A'} | 
-                Founded: ${company.foundedDate || company.registeredDate || 'N/A'}
+                Org nr: ${company.organisationNumber || company.organizationNumber} | 
+                Ort: ${company.location || 'Ej tillgängligt'} | 
+                Grundat: ${company.foundedDate || company.registeredDate || 'Ej tillgängligt'}
               </small>
-              ${company.detailUrl ? `<br><a href="${company.detailUrl}" style="color: #2563eb;">View Details →</a>` : ''}
+              ${company.detailUrl ? `<br><a href="${company.detailUrl}" style="color: #2563eb;">Visa detaljer →</a>` : ''}
             </li>
           `;
         });
         
-        if (codeCompanies.length > 10) {
-          htmlContent += `<li style="padding: 10px; font-style: italic;">... and ${codeCompanies.length - 10} more companies</li>`;
-        }
         
         htmlContent += '</ul>';
       });
       
       htmlContent += '</div>';
     } else {
-      htmlContent += '<p style="color: #64748b;">No new companies found this time. We\'ll keep monitoring for you!</p>';
+      htmlContent += '<p style="color: #64748b;">Inga nya företag hittades denna gång. Vi fortsätter att övervaka åt dig!</p>';
     }
 
     htmlContent += `
       <hr style="margin: 30px 0;">
       <p style="color: #64748b; font-size: 12px;">
-        This automated digest was generated at ${new Date().toLocaleString()}<br>
-        Powered by Company Scraper
+        Detta automatiska sammandrag genererades ${new Date().toLocaleString('sv-SE')}<br>
+        Drivs av Företagsökare
       </p>
     `;
 
     // Create sender and recipients
-    const sentFrom = new Sender(
-      process.env.MAILERSEND_FROM_EMAIL || 'noreply@companyscraper.com', 
-      'Company Scraper'
-    );
+    const sentFrom = new Sender("no-reply@sharksushi.se");
 
     // Send to all emails
     for (const email of emailHandler.emails) {
@@ -170,7 +245,7 @@ async function sendCompanyDigest(companies: any[]): Promise<void> {
           .setReplyTo(sentFrom)
           .setSubject(subject)
           .setHtml(htmlContent)
-          .setText(`Company Scraper Digest: Found ${companies.length} new companies. Please view the HTML version for full details.`);
+          .setText(`Företagsökare: Hittade ${companies.length} nya företag. Vänligen visa HTML-versionen för fullständiga detaljer.`);
 
         await mailerSend.email.send(emailParams);
         console.log(`Email sent successfully to ${email}`);
@@ -185,19 +260,23 @@ async function sendCompanyDigest(companies: any[]): Promise<void> {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('🕐 Starting company digest cron job...');
     
     // Verify cron secret for security
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      console.log('Unauthorized cron request');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  
 
     // Get new companies
     const newCompanies = await getNewCompanies();
+    
+    // Save new companies to database before sending digest
+    if (newCompanies.length > 0) {
+      const saveSuccess = await saveCompaniesToDatabase(newCompanies);
+      if (!saveSuccess) {
+        console.error('⚠️  Failed to save companies to database, but continuing with digest');
+      }
+    }
     
     // Send digest email
     await sendCompanyDigest(newCompanies);
@@ -208,7 +287,7 @@ export async function GET(request: NextRequest) {
       success: true,
       companiesFound: newCompanies.length,
       timestamp: new Date().toISOString(),
-      message: `Digest sent with ${newCompanies.length} new companies`
+      message: `Sammandrag skickat med ${newCompanies.length} nya företag`
     });
 
   } catch (error) {

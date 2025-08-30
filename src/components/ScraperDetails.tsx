@@ -40,17 +40,17 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
 
   const handleAddEmail = async () => {
     if (!newEmail.trim()) {
-      alert('Please enter a valid email address');
+      alert('Vänligen ange en giltig e-postadress');
       return;
     }
 
     if (!isValidEmail(newEmail.trim())) {
-      alert('Please enter a valid email format');
+      alert('Vänligen ange ett giltigt e-postformat');
       return;
     }
 
     if (emails.includes(newEmail.trim())) {
-      alert('This email is already in the list');
+      alert('Denna e-postadress finns redan i listan');
       return;
     }
 
@@ -73,7 +73,7 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
       setNewEmail('');
     } catch (error) {
       console.error('Error adding email:', error);
-      alert('Failed to add email. Please try again.');
+      alert('Kunde inte lägga till e-postadress. Vänligen försök igen.');
     }
     
     setIsAddingEmail(false);
@@ -97,24 +97,24 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
         });
       } catch (error) {
         console.error('Error deleting email:', error);
-        alert('Failed to delete email. Please try again.');
+        alert('Kunde inte ta bort e-postadress. Vänligen försök igen.');
       }
     }
   };
 
   const handleAddCode = async () => {
     if (!newCode.trim()) {
-      alert('Please enter a valid ProfIndustryCode');
+      alert('Vänligen ange en giltig branschkod');
       return;
     }
 
     if (!newCodeName.trim()) {
-      alert('Please enter a name/title for this code');
+      alert('Vänligen ange ett namn/titel för denna kod');
       return;
     }
 
     if (proffIndustryCodes.some(pic => pic.code === newCode.trim())) {
-      alert('This code is already in the list');
+      alert('Denna kod finns redan i listan');
       return;
     }
 
@@ -129,7 +129,6 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
         }
       });
 
-      console.log(newProffIndustryCode);
 
       if (newProffIndustryCode) {
         // Add to the current list
@@ -140,7 +139,7 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
       }
     } catch (error) {
       console.error('Error adding code:', error);
-      alert('Failed to add code. Please try again.');
+      alert('Kunde inte lägga till kod. Vänligen försök igen.');
     }
     
     setIsAdding(false);
@@ -159,19 +158,19 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
         await onCodesChange(updatedCodes);
       } catch (error) {
         console.error('Error deleting code:', error);
-        alert('Failed to delete code. Please try again.');
+        alert('Kunde inte ta bort kod. Vänligen försök igen.');
       }
     }
   };
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Scraper Details</h1>
+      <h1 className="text-3xl font-bold mb-6">Scraper-inställningar</h1>
       
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Manage ProfIndustryCode</h2>
+        <h2 className="text-xl font-semibold mb-4">Hantera branschkoder</h2>
         <p className="text-gray-600 mb-4">
-          Add ProfIndustryCode that will be used when scraping companies. 
+          Lägg till branschkoder som används när företag söks. 
           Example: "10241621"
         </p>
         
@@ -181,14 +180,14 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
               type="text"
               value={newCode}
               onChange={(e) => setNewCode(e.target.value)}
-              placeholder="Enter ProfIndustryCode (e.g., 10241621)"
+              placeholder="Ange branschkod (t.ex. 10241621)"
               className="flex-1 border border-gray-300 rounded-lg p-2"
             />
             <input
               type="text"
               value={newCodeName}
               onChange={(e) => setNewCodeName(e.target.value)}
-              placeholder="Enter title/name (e.g., Software Development)"
+              placeholder="Ange titel/namn (t.ex. Mjukvaruutveckling)"
               className="flex-1 border border-gray-300 rounded-lg p-2"
               onKeyDown={(e) => e.key === 'Enter' && handleAddCode()}
             />
@@ -198,14 +197,14 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
             disabled={isAdding}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
           >
-            {isAdding ? 'Adding...' : 'Add Code'}
+            {isAdding ? 'Lägger till...' : 'Lägg till kod'}
           </button>
         </div>
       </div>
 
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">
-          Current ProfIndustryCode ({proffIndustryCodes.length})
+          Nuvarande branschkoder ({proffIndustryCodes.length})
         </h2>
         
         {proffIndustryCodes.length > 0 ? (
@@ -223,33 +222,33 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
                   onClick={() => handleDeleteCode(proffCode)}
                   className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
                 >
-                  Delete
+                  Ta bort
                 </button>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-600 bg-gray-50 rounded-lg">
-            No ProfIndustryCode configured. Add some codes above to start scraping.
+            Inga branschkoder konfigurerade. Lägg till några koder ovan för att börja söka.
           </div>
         )}
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">ProfIndustryCode - How it works:</h3>
+        <h3 className="text-lg font-semibold text-blue-800 mb-2">Branschkoder - Så här fungerar det:</h3>
         <ul className="text-blue-700 space-y-1">
-          <li>• Add ProfIndustryCode that represent different industry categories</li>
-          <li>• When scraping in "Nya Företag", companies will be filtered by the selected code</li>
-          <li>• You can manage multiple codes and delete them when no longer needed</li>
-          <li>• All scraped companies will be saved to "Sparade Företag"</li>
+          <li>• Lägg till branschkoder som representerar olika branschkategorier</li>
+          <li>• När sökning görs i "Nya Företag" filtreras företag efter den valda koden</li>
+          <li>• Du kan hantera flera koder och ta bort dem när de inte längre behövs</li>
+          <li>• Alla sökta företag sparas i "Sparade Företag"</li>
         </ul>
       </div>
 
       {/* Email Management Section */}
       <div className="mt-12">
-        <h2 className="text-xl font-semibold mb-4">Manage Email Addresses</h2>
+        <h2 className="text-xl font-semibold mb-4">Hantera e-postadresser</h2>
         <p className="text-gray-600 mb-4">
-          Add email addresses for notifications and alerts related to company scraping.
+          Lägg till e-postadresser för aviseringar och varningar relaterade till företagsökning.
         </p>
         
         <div className="flex space-x-2 mb-4">
@@ -257,7 +256,7 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
             type="email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
-            placeholder="Enter email address (e.g., user@example.com)"
+            placeholder="Ange e-postadress (t.ex. användare@exempel.com)"
             className="flex-1 border border-gray-300 rounded-lg p-2 max-w-md"
             onKeyDown={(e) => e.key === 'Enter' && handleAddEmail()}
           />
@@ -266,13 +265,13 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
             disabled={isAddingEmail}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
           >
-            {isAddingEmail ? 'Adding...' : 'Add Email'}
+            {isAddingEmail ? 'Lägger till...' : 'Lägg till e-post'}
           </button>
         </div>
 
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4">
-            Current Email Addresses ({emails.length})
+            Nuvarande e-postadresser ({emails.length})
           </h3>
           
           {emails.length > 0 ? (
@@ -287,25 +286,25 @@ export default function ScraperDetails({ proffIndustryCodes, onCodesChange }: Sc
                     onClick={() => handleDeleteEmail(email)}
                     className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
                   >
-                    Delete
+                    Ta bort
                   </button>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-600 bg-gray-50 rounded-lg">
-              No email addresses configured. Add some emails above for notifications.
+              Inga e-postadresser konfigurerade. Lägg till några e-postadresser ovan för aviseringar.
             </div>
           )}
         </div>
 
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-green-800 mb-2">Email Usage:</h3>
+          <h3 className="text-lg font-semibold text-green-800 mb-2">E-postanvändning:</h3>
           <ul className="text-green-700 space-y-1">
-            <li>• Receive notifications when scraping is completed</li>
-            <li>• Get alerts for new companies matching your criteria</li>
-            <li>• Email addresses are securely stored and managed</li>
-            <li>• You can add multiple emails for different team members</li>
+            <li>• Ta emot aviseringar när sökning är slutförd</li>
+            <li>• Få varningar för nya företag som matchar dina kriterier</li>
+            <li>• E-postadresser lagras och hanteras säkert</li>
+            <li>• Du kan lägga till flera e-postadresser för olika teammedlemmar</li>
           </ul>
         </div>
       </div>

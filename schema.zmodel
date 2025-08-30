@@ -32,19 +32,17 @@ model ScraperHandler extends Base {
 }
 
 model ProffIndustryCode extends Base {
-    code String @unique
-    name String
+    code                String          @unique
+    name                String
 
-    proffIndustryCode            ScraperHandler? @relation(fields: [proffIndustryCodeId], references: [id])
-    proffIndustryCodeId          String?
-        @@allow('all', true)
-
+    proffIndustryCode   ScraperHandler? @relation(fields: [proffIndustryCodeId], references: [id])
+    proffIndustryCodeId String?
+    @@allow('all', true)
 }
 
 model ScrapedCompanies extends Base {
     companies Company[]
-        @@allow('all', true)
-
+    @@allow('all', true)
 }
 
 model Company extends Base {

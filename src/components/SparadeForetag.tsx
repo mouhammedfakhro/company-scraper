@@ -41,7 +41,7 @@ export default function SparadeForetag() {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center h-32">
-          <div className="text-lg">Loading saved companies...</div>
+          <div className="text-lg">Laddar sparade företag...</div>
         </div>
       </div>
     );
@@ -54,11 +54,11 @@ export default function SparadeForetag() {
       <div className="mb-6">
         <div className="flex space-x-4">
           <div className="bg-blue-100 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold">Total Companies</h3>
+            <h3 className="text-lg font-semibold">Totalt antal företag</h3>
             <p className="text-2xl font-bold text-blue-600">{sortedCompanies.length}</p>
           </div>
           <div className="bg-green-100 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold">Favorites</h3>
+            <h3 className="text-lg font-semibold">Favoriter</h3>
             <p className="text-2xl font-bold text-green-600">{favoriteCompanies.length}</p>
           </div>
         </div>
@@ -78,9 +78,9 @@ export default function SparadeForetag() {
                       <span className="ml-2 text-yellow-500">⭐</span>
                     )}
                   </h3>
-                  <p className="text-gray-600">Organisation Number: {company.organizationNumber}</p>
-                  <p className="text-gray-600">Location: {company.address || company.city || 'N/A'}</p>
-                  <p className="text-gray-600">Founded: {company.registeredDate || 'N/A'}</p>
+                  <p className="text-gray-600">Organisationsnummer: {company.organizationNumber}</p>
+                  <p className="text-gray-600">Ort: {company.address || company.city || 'Ej tillgängligt'}</p>
+                  <p className="text-gray-600">Grundat: {company.registeredDate || 'Ej tillgängligt'}</p>
                   {company.CEO && (
                     <p className="text-gray-600">CEO: {company.CEO}</p>
                   )}
@@ -89,12 +89,12 @@ export default function SparadeForetag() {
                   )}
                   {company.description && (
                     <div className="mt-2">
-                      <p className="text-sm text-gray-500">Description:</p>
+                      <p className="text-sm text-gray-500">Beskrivning:</p>
                       <p className="text-sm text-gray-700">{company.description.substring(0, 150)}...</p>
                     </div>
                   )}
                   <div className="flex items-center space-x-4 mt-2">
-                    <p className="text-gray-500 text-sm">Saved: {new Date(company.createdAt).toLocaleDateString()}</p>
+                    <p className="text-gray-500 text-sm">Sparat: {new Date(company.createdAt).toLocaleDateString()}</p>
                     {company.url && (
                       <a 
                         href={company.url} 
@@ -102,7 +102,7 @@ export default function SparadeForetag() {
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 text-sm"
                       >
-                        View Details →
+                        Visa detaljer →
                       </a>
                     )}
                   </div>
@@ -115,7 +115,7 @@ export default function SparadeForetag() {
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  {company.isFavorite ? 'Remove Favorite' : 'Add to Favorites'}
+                  {company.isFavorite ? 'Ta bort från favoriter' : 'Lägg till i favoriter'}
                 </button>
               </div>
             </div>
@@ -123,7 +123,7 @@ export default function SparadeForetag() {
         </div>
       ) : (
         <div className="text-center py-8 text-gray-600">
-          No saved companies found. Scrape some companies from the Nya Företag page first.
+          Inga sparade företag hittades. Sök några företag från sidan Nya Företag först.
         </div>
       )}
     </div>

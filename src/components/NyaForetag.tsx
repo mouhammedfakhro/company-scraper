@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { scrapeCompanies, getMaxPage, Company } from './lib/scraper';
+import { scrapeCompanies, getMaxPage, Company } from '../lib/scraper';
 import { useFindManyCompany, useUpsertCompany } from '../lib/hooks';
 
 interface ProffIndustryCode {
@@ -70,7 +70,7 @@ export default function NyaForetag({ proffIndustryCodes }: NyaForetagProps) {
 
   const handleScrape = async () => {
     if (!selectedCode) {
-      alert('Please select a proffIndustryCode first');
+      alert('Vänligen välj en branschkod först');
       return;
     }
 
@@ -111,14 +111,14 @@ export default function NyaForetag({ proffIndustryCodes }: NyaForetagProps) {
       
       <div className="mb-6">
         <label className="block text-sm font-medium mb-2">
-          Select ProfIndustryCode:
+          Välj branschkod:
         </label>
         <select
           value={selectedCode}
           onChange={(e) => setSelectedCode(e.target.value)}
           className="border border-gray-300 rounded-lg p-2 w-64"
         >
-          <option value="">Select a code...</option>
+          <option value="">Välj en kod...</option>
           {proffIndustryCodes.map((proffCode) => (
             <option key={proffCode.id} value={proffCode.code}>
               {proffCode.code} - {proffCode.name}
@@ -131,27 +131,27 @@ export default function NyaForetag({ proffIndustryCodes }: NyaForetagProps) {
           disabled={loading || !selectedCode}
           className="ml-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          {loading ? 'Scraping...' : 'Scrape Companies'}
+          {loading ? 'Söker...' : 'Sök företag'}
         </button>
       </div>
 
       {loading && (
         <div className="flex justify-center items-center h-32">
-          <div className="text-lg">Scraping companies...</div>
+          <div className="text-lg">Söker företag...</div>
         </div>
       )}
 
       {companies.length > 0 && !loading && (
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">
-            Found {companies.length} new companies (already saved companies filtered out)
+            Hittade {companies.length} nya företag (redan sparade företag borttagna)
           </h2>
           {companies.map((company, index) => (
             <div key={index} className="border border-gray-200 rounded-lg p-4">
               <h3 className="text-xl font-semibold">{company.name}</h3>
-              <p className="text-gray-600">Organisation Number: {company.organisationNumber}</p>
-              <p className="text-gray-600">Location: {company.location}</p>
-              <p className="text-gray-600">Founded: {company.foundedDate}</p>
+              <p className="text-gray-600">Organisationsnummer: {company.organisationNumber}</p>
+              <p className="text-gray-600">Ort: {company.location}</p>
+              <p className="text-gray-600">Grundat: {company.foundedDate}</p>
               {company.CEO && (
                 <p className="text-gray-600">CEO: {company.CEO}</p>
               )}
@@ -160,7 +160,7 @@ export default function NyaForetag({ proffIndustryCodes }: NyaForetagProps) {
               )}
               {company.description && (
                 <div className="mt-2">
-                  <p className="text-sm text-gray-500">Description:</p>
+                  <p className="text-sm text-gray-500">Beskrivning:</p>
                   <p className="text-sm text-gray-700">{company.description.substring(0, 200)}...</p>
                 </div>
               )}
@@ -171,7 +171,7 @@ export default function NyaForetag({ proffIndustryCodes }: NyaForetagProps) {
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 text-sm"
                 >
-                  View Details →
+                  Visa detaljer →
                 </a>
               )}
             </div>
@@ -181,7 +181,7 @@ export default function NyaForetag({ proffIndustryCodes }: NyaForetagProps) {
 
       {proffIndustryCodes.length === 0 && (
         <div className="text-center py-8 text-gray-600">
-          No ProfIndustryCode configured. Please go to Scraper Details to add codes.
+          Inga branschkoder konfigurerade. Gå till Scraper-inställningar för att lägga till koder.
         </div>
       )}
     </div>

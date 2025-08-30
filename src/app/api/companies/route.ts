@@ -23,7 +23,7 @@ async function fetchCompanyDetails(detailUrl: string): Promise<CompanyDetails> {
     console.log(`🔍 Fetching company details from: ${detailUrl}`);
     
     const response = await axios.get(detailUrl, {
-      timeout: 15000,
+      timeout: 5000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       }
@@ -87,13 +87,16 @@ async function fetchCompanyDetails(detailUrl: string): Promise<CompanyDetails> {
   }
 }
 
-async function scrapeCompanies(page: number = 1, proffIndustryCode: string = '10241621'): Promise<Company[]> {
+async function scrapeCompanies(page: number = 1, proffIndustryCode: string = '10241621', skipDetails: boolean = false): Promise<Company[]> {
   const url = `https://www.allabolag.se/nystartade?location=Skåne&proffIndustryCode=${proffIndustryCode}&page=${page}`;
   
   try {
     console.log(`Fetching page ${page} from: ${url}`);
     const response = await axios.get(url, {
-      timeout: 10000,
+      timeout: 8000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
     });
     
     console.log(`Response status for page ${page}:`, response.status);
@@ -178,9 +181,17 @@ async function scrapeCompanies(page: number = 1, proffIndustryCode: string = '10
         const foundedDate = dateMatch[1];
         console.log(`Date: ${foundedDate}`);
         
-        // Fetch additional details from company detail page
-        console.log(`🔍 Fetching additional details for ${companyName}...`);
-        const additionalDetails = await fetchCompanyDetails(fullDetailUrl);
+        // Skip detail fetching for cron jobs to improve speed and reliability
+        let additionalDetails: CompanyDetails = {};
+        
+        if (!skipDetails) {
+          try {
+            console.log(`🔍 Fetching additional details for ${companyName}...`);
+            additionalDetails = await fetchCompanyDetails(fullDetailUrl);
+          } catch (error) {
+            console.log(`⚠️ Failed to fetch details for ${companyName}, continuing without details`);
+          }
+        }
         
         // Add the complete company with all details
         companies.push({
@@ -247,12 +258,15 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
   const code = searchParams.get('code') || '10241621';
+  const skipDetails = searchParams.get('skipDetails') === 'true';
   
   try {
-    const companies = await scrapeCompanies(page, code);
+    console.log(`🚀 API called with page=${page}, code=${code}, skipDetails=${skipDetails}`);
+    const companies = await scrapeCompanies(page, code, skipDetails);
+    console.log(`✅ API returning ${companies.length} companies`);
     return NextResponse.json(companies);
   } catch (error) {
-    console.error('API error:', error);
+    console.error('❌ API error:', error);
     return NextResponse.json({ error: 'Failed to fetch companies' }, { status: 500 });
   }
 }
